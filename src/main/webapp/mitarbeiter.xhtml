@@ -1,0 +1,312 @@
+<ui:composition template="template.xhtml" xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html"
+    xmlns:f="jakarta.faces.core" xmlns:ui="jakarta.faces.facelets">
+
+    <ui:define name="title">Mitarbeiter</ui:define>
+    <ui:define name="content">
+
+        <div class="page-header">
+            <h2>&#x1F464; Mitarbeiter</h2>
+            <p>Übersicht aller Mitarbeiterinnen und Mitarbeiter</p>
+        </div>
+
+        <h:messages styleClass="msg-error" errorStyle="display:block" infoStyleClass="msg-success" />
+
+        <!-- Anlegen-Modal -->
+        <h:panelGroup rendered="#{staffView.creationPanelVisible}">
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <h:form>
+                        <div class="modal-header">
+                            <h3>&#x2795; Neuen Mitarbeiter anlegen</h3>
+                            <h:commandButton value="&#x2715;" action="#{staffView.closeCreationPanel()}"
+                                styleClass="modal-close" immediate="true" />
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Vorname *</label>
+                                    <h:inputText value="#{staffView.formStaff.firstName}" styleClass="form-input"
+                                        required="true" requiredMessage="Vorname ist erforderlich" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Nachname *</label>
+                                    <h:inputText value="#{staffView.formStaff.lastName}" styleClass="form-input"
+                                        required="true" requiredMessage="Nachname ist erforderlich" />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>E-Mail</label>
+                                    <h:inputText value="#{staffView.formStaff.email}" styleClass="form-input"
+                                        required="true" requiredMessage="E-Mail ist erforderlich" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Telefon</label>
+                                    <h:inputText value="#{staffView.formStaff.phone}" styleClass="form-input" />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Filial-ID *</label>
+                                    <h:inputText value="#{staffView.formStaff.storeId}" styleClass="form-input"
+                                        required="true" requiredMessage="Filiale ist erforderlich" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Vorgesetzter</label>
+                                    <h:selectOneMenu value="#{staffView.selectedManagerId}" styleClass="form-input">
+                                        <f:selectItem itemValue="#{null}" itemLabel="-- kein Vorgesetzter (= ADMIN) --"
+                                            noSelectionOption="true" />
+                                        <f:selectItems value="#{staffView.managerList}" var="m" itemValue="#{m.staffId}"
+                                            itemLabel="#{m.firstName} #{m.lastName} (ID: #{m.staffId})" />
+                                    </h:selectOneMenu>
+                                </div>
+                            </div>
+                            <p style="font-size:12px; color:var(--text-muted); margin-top:8px;">
+                                Kein Vorgesetzter = ADMIN | Manager-ID 1 = USER1 | andere = USER2
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <h:commandButton value="Abbrechen" action="#{staffView.closeCreationPanel()}"
+                                styleClass="btn btn-gray" immediate="true" />
+                            <h:commandButton value="&#x1F4BE; Speichern" action="#{staffView.saveStaff()}"
+                                styleClass="btn btn-red" />
+                        </div>
+                    </h:form>
+                </div>
+            </div>
+        </h:panelGroup>
+
+        <!-- Bearbeiten-Modal -->
+        <h:panelGroup rendered="#{staffView.editPanelVisible}">
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <h:form>
+                        <div class="modal-header">
+                            <h3>&#x270F; Mitarbeiter bearbeiten (ID: #{staffView.editStaff.staffId})</h3>
+                            <h:commandButton value="&#x2715;" action="#{staffView.closeEditPanel()}"
+                                styleClass="modal-close" immediate="true" />
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Vorname *</label>
+                                    <h:inputText value="#{staffView.editStaff.firstName}" styleClass="form-input"
+                                        required="true" requiredMessage="Vorname ist erforderlich" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Nachname *</label>
+                                    <h:inputText value="#{staffView.editStaff.lastName}" styleClass="form-input"
+                                        required="true" requiredMessage="Nachname ist erforderlich" />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>E-Mail * (= Benutzername)</label>
+                                    <h:inputText value="#{staffView.editStaff.email}" styleClass="form-input"
+                                        required="true" requiredMessage="E-Mail ist erforderlich" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Telefon (= Passwort ohne Vorwahl)</label>
+                                    <h:inputText value="#{staffView.editStaff.phone}" styleClass="form-input" />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Filial-ID *</label>
+                                    <h:inputText value="#{staffView.editStaff.storeId}" styleClass="form-input"
+                                        required="true" requiredMessage="Filiale ist erforderlich" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Vorgesetzter</label>
+                                    <h:selectOneMenu value="#{staffView.editManagerId}" styleClass="form-input">
+                                        <f:selectItem itemValue="#{null}" itemLabel="-- kein Vorgesetzter (= ADMIN) --"
+                                            noSelectionOption="true" />
+                                        <f:selectItems value="#{staffView.managerList}" var="m" itemValue="#{m.staffId}"
+                                            itemLabel="#{m.firstName} #{m.lastName} (ID: #{m.staffId})" />
+                                    </h:selectOneMenu>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <h:commandButton value="Abbrechen" action="#{staffView.closeEditPanel()}"
+                                styleClass="btn btn-gray" immediate="true" />
+                            <h:commandButton value="&#x1F4BE; Speichern" action="#{staffView.updateStaff()}"
+                                styleClass="btn btn-red" />
+                        </div>
+                    </h:form>
+                </div>
+            </div>
+        </h:panelGroup>
+
+        <!-- Detail-Modal -->
+        <h:panelGroup rendered="#{staffView.detailPanelVisible}">
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>&#x1F464; Mitarbeiter-Details</h3>
+                        <h:form>
+                            <h:commandButton value="&#x2715;" action="#{staffView.closeDetail()}"
+                                styleClass="modal-close" />
+                        </h:form>
+                    </div>
+                    <div class="modal-body">
+                        <table class="detail-table">
+                            <tbody>
+                                <tr>
+                                    <td class="detail-label">ID</td>
+                                    <td>#{staffView.focusedStaff.staffId}</td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">Vorname</td>
+                                    <td>#{staffView.focusedStaff.firstName}</td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">Nachname</td>
+                                    <td>#{staffView.focusedStaff.lastName}</td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">E-Mail</td>
+                                    <td>#{staffView.focusedStaff.email}</td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">Telefon</td>
+                                    <td>#{staffView.focusedStaff.phone}</td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">Status</td>
+                                    <td><span
+                                            class="badge #{staffView.focusedStaff.active == 1 ? 'badge-green' : 'badge-red'}">
+                                            #{staffView.focusedStaff.active == 1 ? 'Aktiv' : 'Inaktiv'}
+                                        </span></td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">Filial-ID</td>
+                                    <td>#{staffView.focusedStaff.storeId}</td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">Vorgesetzter</td>
+                                    <td>
+                                        <h:panelGroup rendered="#{staffView.focusedStaff.manager != null}">
+                                            #{staffView.focusedStaff.manager.firstName}
+                                            #{staffView.focusedStaff.manager.lastName}
+                                        </h:panelGroup>
+                                        <h:panelGroup rendered="#{staffView.focusedStaff.manager == null}">
+                                            <span style="color:var(--text-muted);">- kein Vorgesetzter</span>
+                                        </h:panelGroup>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <h:form>
+                            <h:commandButton value="&#x2715; Schließen" action="#{staffView.closeDetail()}"
+                                styleClass="btn btn-gray" />
+                        </h:form>
+                    </div>
+                </div>
+            </div>
+        </h:panelGroup>
+
+        <!-- Tabelle -->
+        <div class="table-wrapper">
+            <div class="table-toolbar">
+                <span>Mitarbeiterliste</span>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <h:form>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <label style="font-size:13px; color:var(--text-muted);">Sortieren</label>
+                            <h:selectOneMenu value="#{staffView.sortField}" styleClass="sort-select">
+                                <f:selectItem itemValue="LAST_NAME" itemLabel="Nachname" />
+                                <f:selectItem itemValue="FIRST_NAME" itemLabel="Vorname" />
+                                <f:selectItem itemValue="EMAIL" itemLabel="E-Mail" />
+                                <f:selectItem itemValue="ACTIVE" itemLabel="Status" />
+                                <f:selectItem itemValue="STORE" itemLabel="Niederlassung" />
+                            </h:selectOneMenu>
+                            <h:selectOneMenu value="#{staffView.sortDirection}" styleClass="sort-select">
+                                <f:selectItem itemValue="ASC" itemLabel="&#x2191; Aufsteigend" />
+                                <f:selectItem itemValue="DESC" itemLabel="&#x2193; Absteigend" />
+                            </h:selectOneMenu>
+                            <h:commandButton value="Anwenden" action="#{staffView.applySort()}"
+                                styleClass="btn btn-red" />
+                        </div>
+                    </h:form>
+                    <h:form>
+                        <h:commandButton value="&#x2795; Neuer Mitarbeiter" action="#{staffView.openCreationPanel()}"
+                            styleClass="btn-add btn-add-red" />
+                    </h:form>
+                </div>
+            </div>
+
+            <h:panelGroup rendered="#{empty staffView.staffList}">
+                <div class="placeholder-box">
+                    <p>Keine Mitarbeiter vorhanden.</p>
+                </div>
+            </h:panelGroup>
+
+            <h:form rendered="#{not empty staffView.staffList}">
+                <div class="overflow-x">
+                    <h:dataTable value="#{staffView.staffList}" var="s">
+                        <h:column>
+                            <f:facet name="header">ID</f:facet>#{s.staffId}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Vorname</f:facet>#{s.firstName}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Nachname</f:facet>#{s.lastName}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">E-Mail</f:facet>#{s.email}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Telefon</f:facet>#{s.phone}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Status</f:facet>
+                            <span class="badge #{s.active == 1 ? 'badge-green' : 'badge-red'}">
+                                #{s.active == 1 ? 'Aktiv' : 'Inaktiv'}
+                            </span>
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Filiale</f:facet>#{s.storeId}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Aktionen</f:facet>
+                            <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                                <h:commandButton value="&#x2139;" action="#{staffView.openDetail(s)}"
+                                    styleClass="btn btn-gray" title="Details" />
+                                <h:commandButton value="&#x270F; Bearbeiten" action="#{staffView.openEditPanel(s)}"
+                                    styleClass="btn btn-primary" title="Bearbeiten" />
+                                <!-- Deaktivieren/Aktivieren per selectedIdToToggle -->
+                                <h:panelGroup rendered="#{s.active == 1}">
+                                    <h:commandButton value="&#x23F8; Deakt." styleClass="btn btn-orange"
+                                        action="#{staffView.deactivateStaff()}"
+                                        onclick="return confirm('Mitarbeiter deaktivieren? Login wird gesperrt.')">
+                                        <f:setPropertyActionListener target="#{staffView.selectedIdToToggle}"
+                                            value="#{s.staffId}" />
+                                    </h:commandButton>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{s.active == 0}">
+                                    <h:commandButton value="&#x25B6; Akt." styleClass="btn btn-success"
+                                        action="#{staffView.activateStaff()}">
+                                        <f:setPropertyActionListener target="#{staffView.selectedIdToToggle}"
+                                            value="#{s.staffId}" />
+                                    </h:commandButton>
+                                </h:panelGroup>
+                            </div>
+                        </h:column>
+                    </h:dataTable>
+                </div>
+                <div class="pagination">
+                    <h:commandButton value="&#x2190; Zurück" action="#{staffView.previousPage}"
+                        rendered="#{staffView.hasPrecedingPage()}" styleClass="btn btn-gray" />
+                    <span>Seite #{staffView.page + 1} von #{staffView.totalPages}</span>
+                    <h:commandButton value="Weiter &#x2192;" action="#{staffView.nextPage}"
+                        rendered="#{staffView.hasFollowingPage()}" styleClass="btn btn-red" />
+                </div>
+            </h:form>
+        </div>
+
+    </ui:define>
+</ui:composition>

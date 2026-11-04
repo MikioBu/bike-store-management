@@ -1,0 +1,62 @@
+<ui:composition template="template.xhtml" xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html"
+    xmlns:ui="jakarta.faces.facelets">
+
+    <ui:define name="title">Startseite</ui:define>
+
+    <ui:define name="content">
+
+        <div class="dashboard-hero">
+            <h1>Willkommen im Vertriebsunterstützungsystem</h1>
+            <p>Verwalten Sie Kunden, Produkte, Bestellungen, Niederlassungen und Lagerbestände</p>
+        </div>
+
+        <div class="dashboard-grid">
+
+            <h:link outcome="kunden" styleClass="dash-card kunden">
+                <div class="card-icon">&#x1F465;</div>
+                <h3>Kunden</h3>
+                <p>Kundenstammdaten einsehen und verwalten.</p>
+                <span class="card-link">&#x2192; Verwalten</span>
+            </h:link>
+
+            <h:link outcome="produkte" styleClass="dash-card produkte">
+                <div class="card-icon">&#x1F6B2;</div>
+                <h3>Produkte</h3>
+                <p>Sortiment, Marken und Preise pflegen.</p>
+                <span class="card-link">&#x2192; Verwalten</span>
+            </h:link>
+
+            <h:link outcome="bestellungen" styleClass="dash-card bestellung">
+                <div class="card-icon">&#x1F4CB;</div>
+                <h3>Bestellungen</h3>
+                <p>Aufträge einsehen und Positionen prüfen.</p>
+                <span class="card-link">&#x2192; Einsehen</span>
+            </h:link>
+
+            <h:link outcome="niederlassungen" styleClass="dash-card niederlassungen">
+                <div class="card-icon">&#x1F3EA;</div>
+                <h3>Niederlassungen</h3>
+                <p>Standorte und Kontaktdaten der Niederlassungen.</p>
+                <span class="card-link">&#x2192; Einsehen</span>
+            </h:link>
+
+            <h:panelGroup rendered="#{request.isUserInRole('ADMIN')}">
+                <h:link outcome="mitarbeiter" styleClass="dash-card mitarbeiter">
+                    <div class="card-icon">&#x1F464;</div>
+                    <h3>Mitarbeiter</h3>
+                    <p>Personal und Zuordnungen verwalten.</p>
+                    <span class="card-link">&#x2192; Verwalten</span>
+                </h:link>
+            </h:panelGroup>
+
+            <h:link outcome="lagerbestaende" styleClass="dash-card lager">
+                <div class="card-icon">&#x1F4E6;</div>
+                <h3>Lagerbestände</h3>
+                <p>Aktuelle Bestände aller Niederlassungen im Überblick.</p>
+                <span class="card-link">&#x2192; Einsehen</span>
+            </h:link>
+
+        </div>
+
+    </ui:define>
+</ui:composition>

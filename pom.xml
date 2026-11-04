@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>de.ostfalia.sep</groupId>
+    <artifactId>bikes15</artifactId>
+    <version>0.9</version>
+    <name>SE-Projekt vierte Iteration</name>
+    <packaging>war</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.release>25</maven.compiler.release>
+
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+        <maven-resources-plugin.version>3.4.0</maven-resources-plugin.version>
+        <maven-surefire-plugin.version>3.5.5</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.5.5</maven-failsafe-plugin.version>
+        <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
+        <maven-war-plugin.version>3.5.1</maven-war-plugin.version>
+        <maven-antrun-plugin.version>3.1.0</maven-antrun-plugin.version>
+        <exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
+
+        <junit.version>5.14.3</junit.version>
+        <selenium.version>4.44.0</selenium.version>
+        <htmlunit.version>4.21.0</htmlunit.version>
+        <wildfly-maven-plugin.version>6.0.0.Final</wildfly-maven-plugin.version>
+        <h2.version>2.4.240</h2.version>
+
+        <app.war.name>team-15</app.war.name>
+        <it.war.name>team-15-it</it.war.name>
+
+        <!-- Browserliste: Fehlende Browser werden im SeleniumIT sauber als skipped markiert. -->
+        <browsers>chrome,firefox,edge,chromium</browsers>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.platform</groupId>
+            <artifactId>jakarta.jakartaee-api</artifactId>
+            <version>10.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>${selenium.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.htmlunit</groupId>
+            <artifactId>htmlunit</artifactId>
+            <version>${htmlunit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${app.war.name}</finalName>
+
+        <plugins>
+            <!-- Dynamische Test-Portwahl:
+                 - Wenn 8080/8443/9990 frei sind, läuft der Testserver auf 8080/8443/9990.
+                 - Wenn eine normale WildFly-Instanz läuft oder einer dieser Ports belegt ist, läuft der Testserver auf 8180/8543/10090.
+                 - Wenn auch die Alternativports belegt sind, bricht der Build mit klarer Meldung ab. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>${maven-antrun-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>detect-integration-test-ports</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <exportAntProperties>true</exportAntProperties>
+                            <target name="detect-integration-test-ports">
+                                <condition property="it.primary.ports.busy">
+                                    <or>
+                                        <socket server="127.0.0.1" port="8080"/>
+                                        <socket server="127.0.0.1" port="8443"/>
+                                        <socket server="127.0.0.1" port="9990"/>
+                                    </or>
+                                </condition>
+
+                                <condition property="it.alternative.ports.busy">
+                                    <or>
+                                        <socket server="127.0.0.1" port="8180"/>
+                                        <socket server="127.0.0.1" port="8543"/>
+                                        <socket server="127.0.0.1" port="10090"/>
+                                    </or>
+                                </condition>
+
+                                <condition property="it.selected.mode" value="parallel-ports-8180" else="default-ports-8080">
+                                    <isset property="it.primary.ports.busy"/>
+                                </condition>
+
+                                <condition property="it.alt.required.and.blocked">
+                                    <and>
+                                        <isset property="it.primary.ports.busy"/>
+                                        <isset property="it.alternative.ports.busy"/>
+                                    </and>
+                                </condition>
+
+                                <fail if="it.alt.required.and.blocked"
+                                      message="8080/8443/9990 sind belegt, aber mindestens einer der Alternativports 8180/8543/10090 ist ebenfalls belegt. Bitte alten Test-WildFly beenden oder Ports freigeben."/>
+
+                                <condition property="it.http.port" value="8180" else="8080">
+                                    <isset property="it.primary.ports.busy"/>
+                                </condition>
+                                <condition property="it.https.port" value="8543" else="8443">
+                                    <isset property="it.primary.ports.busy"/>
+                                </condition>
+                                <condition property="it.management.port" value="10090" else="9990">
+                                    <isset property="it.primary.ports.busy"/>
+                                </condition>
+                                <condition property="it.base.url" value="http://localhost:8180/team-15-it/" else="http://localhost:8080/team-15-it/">
+                                    <isset property="it.primary.ports.busy"/>
+                                </condition>
+
+                                <echo message="Integrationstest-Portmodus: ${it.selected.mode}"/>
+                                <echo message="Integrationstest-HTTP-Port: ${it.http.port}"/>
+                                <echo message="Integrationstest-HTTPS-Port: ${it.https.port}"/>
+                                <echo message="Integrationstest-Management-Port: ${it.management.port}"/>
+                                <echo message="Integrationstest-Base-URL: ${it.base.url}"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>${maven-resources-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>copy-integration-test-resources</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <overwrite>true</overwrite>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/test/resources-war</directory>
+                                    <filtering>false</filtering>
+                                    <excludes>
+                                        <exclude>debug-db.jsp</exclude>
+                                    </excludes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>${maven-war-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>build-integration-test-war</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>war</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>it</classifier>
+                            <packagingExcludes>**/*-ds.xml</packagingExcludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*IT.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${maven-failsafe-plugin.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*IT.java</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/ResultIT.java</exclude>
+                        <exclude>**/AusgabeIT.java</exclude>
+                    </excludes>
+                    <systemPropertyVariables>
+                        <it.base.url>${it.base.url}</it.base.url>
+                        <browsers>${browsers}</browsers>
+                        <sql.log.file>${project.build.directory}/server/standalone/log/server.log</sql.log.file>
+                        <sql.counts.file>${project.build.directory}/sql-statement-counts.csv</sql.counts.file>
+                    </systemPropertyVariables>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>run-integration-tests</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>print-test-summary</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>de.sep.it.result.ResultIT</mainClass>
+                            <classpathScope>test</classpathScope>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.wildfly.plugins</groupId>
+                <artifactId>wildfly-maven-plugin</artifactId>
+                <version>${wildfly-maven-plugin.version}</version>
+                <configuration>
+                    <hostname>127.0.0.1</hostname>
+                    <port>${it.management.port}</port>
+                    <timeout>180</timeout>
+                    <startupTimeout>180</startupTimeout>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>start-wildfly</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>start</goal>
+                        </goals>
+                        <configuration>
+                            <hostname>127.0.0.1</hostname>
+                            <port>${it.management.port}</port>
+                            <timeout>180</timeout>
+                            <startupTimeout>180</startupTimeout>
+                            <javaOpts>
+                                -Djboss.http.port=${it.http.port}
+                                -Djboss.https.port=${it.https.port}
+                                -Djboss.management.http.port=${it.management.port}
+                            </javaOpts>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>configure-integrated-jaspi</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>execute-commands</goal>
+                        </goals>
+                        <configuration>
+                            <hostname>127.0.0.1</hostname>
+                            <port>${it.management.port}</port>
+                            <timeout>180</timeout>
+                            <commands>
+                                <command>/subsystem=undertow/application-security-domain=other:write-attribute(name=integrated-jaspi,value=false)</command>
+
+                                <!-- Hibernate-SQL-Logging für SQL-Statement-Zählung im server.log. -->
+                                <command>if (outcome == success) of /subsystem=logging/logger=org.hibernate.SQL:read-resource</command>
+                                <command>/subsystem=logging/logger=org.hibernate.SQL:write-attribute(name=level,value=DEBUG)</command>
+                                <command>else</command>
+                                <command>/subsystem=logging/logger=org.hibernate.SQL:add(level=DEBUG)</command>
+                                <command>end-if</command>
+                            </commands>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>create-h2-datasource</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>execute-commands</goal>
+                        </goals>
+                        <configuration>
+                            <hostname>127.0.0.1</hostname>
+                            <port>${it.management.port}</port>
+                            <timeout>180</timeout>
+                            <commands>
+                                <command>if (outcome == success) of /subsystem=datasources/data-source=bikes15:read-resource</command>
+                                <command>/subsystem=datasources/data-source=bikes15:remove</command>
+                                <command>end-if</command>
+                                <command>/subsystem=datasources/data-source=bikes15:add(jndi-name=java:jboss/datasources/bikes15,enabled=true,use-java-context=true,driver-name=h2,connection-url="jdbc:h2:mem:bikes15;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",user-name=sa,password=sa)</command>
+                            </commands>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>deploy-integration-test-war</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>deploy-only</goal>
+                        </goals>
+                        <configuration>
+                            <hostname>127.0.0.1</hostname>
+                            <port>${it.management.port}</port>
+                            <timeout>180</timeout>
+                            <filename>${it.war.name}.war</filename>
+                            <name>${it.war.name}.war</name>
+                            <runtimeName>${it.war.name}.war</runtimeName>
+                            <force>true</force>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>shutdown-wildfly</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>shutdown</goal>
+                        </goals>
+                        <configuration>
+                            <hostname>127.0.0.1</hostname>
+                            <port>${it.management.port}</port>
+                            <timeout>180</timeout>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven-javadoc-plugin.version}</version>
+                <configuration>
+                    <header>Software Engineering Projekt</header>
+                    <doctitle>Software Engineering Projekt</doctitle>
+                    <bottom>Copyright &#169; 2026 Team-15</bottom>
+                    <doclint>none</doclint>
+                    <release>${maven.compiler.release}</release>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

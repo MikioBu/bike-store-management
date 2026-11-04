@@ -1,0 +1,84 @@
+<ui:composition template="template.xhtml" xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html"
+    xmlns:f="jakarta.faces.core" xmlns:ui="jakarta.faces.facelets">
+
+    <ui:define name="title">Niederlassungen</ui:define>
+
+    <ui:define name="content">
+
+        <div class="page-header">
+            <h2>&#x1F3EA; Niederlassungen</h2>
+            <p>Standorte und Kontaktdaten aller Niederlassungen</p>
+        </div>
+
+        <h:messages styleClass="msg-error" infoStyleClass="msg-info" />
+
+        <!-- Tabelle-->
+        <div class="table-wrapper">
+            <div class="table-toolbar">
+                <span>Filialliste</span>
+                <h:form>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <label style="font-size:13px; color:var(--text-muted);">Sortieren</label>
+                        <h:selectOneMenu value="#{storeView.sortField}" styleClass="sort-select">
+                            <f:selectItem itemValue="NAME" itemLabel="Filialname" />
+                            <f:selectItem itemValue="CITY" itemLabel="Stadt" />
+                            <f:selectItem itemValue="STATE" itemLabel="Bundesland" />
+                            <f:selectItem itemValue="ZIP_CODE" itemLabel="PLZ" />
+                        </h:selectOneMenu>
+                        <h:selectOneMenu value="#{storeView.sortDirection}" styleClass="sort-select">
+                            <f:selectItem itemValue="ASC" itemLabel="&#x2191; Aufsteigend" />
+                            <f:selectItem itemValue="DESC" itemLabel="&#x2193; Absteigend" />
+                        </h:selectOneMenu>
+                        <h:commandButton value="Anwenden" action="#{storeView.applySort()}"
+                            styleClass="btn btn-orange" />
+                    </div>
+                </h:form>
+            </div>
+
+            <h:panelGroup rendered="#{empty storeView.storeList}">
+                <div class="placeholder-box">
+                    <p>Keine Niederlassungen vorhanden.</p>
+                </div>
+            </h:panelGroup>
+
+            <h:form rendered="#{not empty storeView.storeList}">
+                <div class="overflow-x">
+                    <h:dataTable value="#{storeView.storeList}" var="s">
+                        <h:column>
+                            <f:facet name="header">ID</f:facet>#{s.storeId}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Filialname</f:facet>#{s.storeName}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">E-Mail</f:facet>#{s.email}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Telefon</f:facet>#{s.phone}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Straße</f:facet>#{s.street}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Stadt</f:facet>#{s.city}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Bundesland</f:facet>#{s.state}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">PLZ</f:facet>#{s.zipCode}
+                        </h:column>
+                    </h:dataTable>
+                </div>
+                <div class="pagination">
+                    <h:commandButton value="&#x2190; Zurück" action="#{storeView.previousPage}"
+                        rendered="#{storeView.hasPrecedingPage()}" styleClass="btn btn-orange" />
+                    <span>Seite #{storeView.page + 1} von #{storeView.totalPages}</span>
+                    <h:commandButton value="Weiter &#x2192;" action="#{storeView.nextPage}"
+                        rendered="#{storeView.hasFollowingPage()}" styleClass="btn btn-orange" />
+                </div>
+            </h:form>
+        </div>
+
+    </ui:define>
+</ui:composition>

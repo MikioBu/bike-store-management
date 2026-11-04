@@ -1,0 +1,8 @@
+deploy-script.bat
+standalone.bat*
+standalone40.bat*
+deployments*
+target/*
+.vscode/*
+.idea/*
+.env

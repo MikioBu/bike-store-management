@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd"
+             version="3.1">
+
+    <persistence-unit name="bikes15PU" transaction-type="JTA">
+        <jta-data-source>java:jboss/datasources/bikes15</jta-data-source>
+
+        <properties>
+            <!-- Test-WAR: Schema neu erzeugen und Testdaten importieren. -->
+            <property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>
+            <property name="hibernate.hbm2ddl.import_files" value="import.sql"/>
+
+            <!-- Für die Vorführung: SQL direkt im Maven/WildFly-Terminal sichtbar ausgeben. -->
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="false"/>
+            <property name="hibernate.highlight_sql" value="false"/>
+            <property name="hibernate.use_sql_comments" value="false"/>
+        </properties>
+    </persistence-unit>
+</persistence>

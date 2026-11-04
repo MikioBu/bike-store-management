@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+                             https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+    <servlet>
+        <servlet-name>Faces Servlet</servlet-name>
+        <servlet-class>jakarta.faces.webapp.FacesServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Faces Servlet</servlet-name>
+        <url-pattern>*.xhtml</url-pattern>
+    </servlet-mapping>
+
+    <welcome-file-list>
+        <welcome-file>startseite.xhtml</welcome-file>
+    </welcome-file-list>
+
+    <!--  Security-Constraints -->
+
+    <!-- Mitarbeiterdaten: nur ADMIN -->
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>Mitarbeiter</web-resource-name>
+            <url-pattern>/mitarbeiter.xhtml</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>ADMIN</role-name>
+        </auth-constraint>
+    </security-constraint>
+
+    <!-- Alle anderen Seiten: alle angemeldeten Rollen -->
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>Allgemein</web-resource-name>
+            <url-pattern>/startseite.xhtml</url-pattern>
+            <url-pattern>/kunden.xhtml</url-pattern>
+            <url-pattern>/produkte.xhtml</url-pattern>
+            <url-pattern>/bestellungen.xhtml</url-pattern>
+            <url-pattern>/niederlassungen.xhtml</url-pattern>
+            <url-pattern>/lagerbestaende.xhtml</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>ADMIN</role-name>
+            <role-name>USER1</role-name>
+            <role-name>USER2</role-name>
+        </auth-constraint>
+    </security-constraint>
+
+    <!-- Rollen-Deklaration -->
+    <security-role>
+        <role-name>ADMIN</role-name>
+    </security-role>
+    <security-role>
+        <role-name>USER1</role-name>
+    </security-role>
+    <security-role>
+        <role-name>USER2</role-name>
+    </security-role>
+
+</web-app>

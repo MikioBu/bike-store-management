@@ -1,0 +1,433 @@
+<ui:composition template="template.xhtml" xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html"
+    xmlns:f="jakarta.faces.core" xmlns:ui="jakarta.faces.facelets">
+
+    <ui:define name="title">Bestellungen</ui:define>
+
+    <ui:define name="content">
+
+        <div class="page-header">
+            <h2>&#x1F4CB; Bestellungen</h2>
+            <p>Alle Aufträge mit Positionen und Status</p>
+        </div>
+
+        <h:messages styleClass="msg-error" errorStyle="display:block" infoStyleClass="msg-success" />
+
+        <!-- Anlegen-Modal -->
+        <h:panelGroup
+            rendered="#{orderView.creationPanelVisible and (request.isUserInRole('ADMIN') or request.isUserInRole('USER1'))}">
+            <div class="modal-overlay">
+                <div class="modal-content" style="max-width: 800px;">
+                    <h:form>
+                        <div class="modal-header">
+                            <h3>&#x2795; Neue Bestellung anlegen</h3>
+                            <h:commandButton value="&#x2715;" action="#{orderView.closeCreationPanel()}"
+                                styleClass="modal-close" immediate="true" process="@this" />
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group" style="margin-bottom:16px;">
+                                <label>Kunde *</label>
+                                <h:selectOneMenu value="#{orderView.selectedCustomerId}" styleClass="form-input"
+                                    required="true" requiredMessage="Bitte einen Kunden wählen">
+                                    <f:selectItem itemValue="#{null}" itemLabel="-- Bitte wählen --"
+                                        noSelectionOption="true" />
+                                    <f:selectItems value="#{orderView.customerList}" var="c" itemValue="#{c.customerId}"
+                                        itemLabel="#{c.firstName} #{c.lastName} - #{c.email}" />
+                                </h:selectOneMenu>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Bestelldatum *</label>
+                                    <h:inputText value="#{orderView.formOrder.orderDate}" styleClass="form-input"
+                                        required="true" requiredMessage="Bestelldatum ist erforderlich">
+                                        <f:convertDateTime type="localDate" pattern="dd.MM.yyyy" />
+                                    </h:inputText>
+                                    <small style="color:var(--text-muted);font-size:12px;">Format: TT.MM.JJJJ</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Lieferdatum *</label>
+                                    <h:inputText value="#{orderView.formOrder.requiredDate}" styleClass="form-input"
+                                        required="true" requiredMessage="Lieferdatum ist erforderlich">
+                                        <f:convertDateTime type="localDate" pattern="dd.MM.yyyy" />
+                                    </h:inputText>
+                                    <small style="color:var(--text-muted);font-size:12px;">Format: TT.MM.JJJJ</small>
+                                </div>
+                            </div>
+                            <div class="form-row" style="margin-top:16px;">
+                                <div class="form-group">
+                                    <label>Niederlassung *</label>
+                                    <h:selectOneMenu value="#{orderView.selectedStoreId}" styleClass="form-input"
+                                        required="true" requiredMessage="Bitte eine Niederlassung wählen">
+                                        <f:selectItem itemValue="#{null}" itemLabel="-- Bitte wählen --"
+                                            noSelectionOption="true" />
+                                        <f:selectItems value="#{orderView.storeList}" var="s" itemValue="#{s.storeId}"
+                                            itemLabel="#{s.storeName} - #{s.city}" />
+                                    </h:selectOneMenu>
+                                </div>
+                                <div class="form-group">
+                                    <label>Mitarbeiter *</label>
+                                    <h:selectOneMenu value="#{orderView.selectedStaffId}" styleClass="form-input"
+                                        required="true" requiredMessage="Bitte einen Mitarbeiter wählen">
+                                        <f:selectItem itemValue="#{null}" itemLabel="-- Bitte wählen --"
+                                            noSelectionOption="true" />
+                                        <f:selectItems value="#{orderView.staffList}" var="st" itemValue="#{st.staffId}"
+                                            itemLabel="#{st.firstName} #{st.lastName}" />
+                                    </h:selectOneMenu>
+                                </div>
+                            </div>
+
+                            <!-- Positionen -->
+                            <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+                                <label style="font-weight:600; margin-bottom:12px; display:block;">Positionen *</label>
+                                <div class="order-item-grid">
+                                    <div class="form-group" style="margin:0;">
+                                        <label style="font-size:11px;">Produkt</label>
+                                        <h:selectOneMenu value="#{orderView.selectedProductId}" styleClass="form-input">
+                                            <f:selectItem itemValue="#{null}" itemLabel="-- Produkt wählen --"
+                                                noSelectionOption="true" />
+                                            <f:selectItems value="#{orderView.productList}" var="p"
+                                                itemValue="#{p.productId}"
+                                                itemLabel="#{p.productName} - #{p.listPrice} €" />
+                                        </h:selectOneMenu>
+                                    </div>
+                                    <div class="form-group" style="margin:0;">
+                                        <label style="font-size:11px;">Menge</label>
+                                        <h:inputText value="#{orderView.selectedQuantity}" styleClass="form-input" />
+                                    </div>
+                                    <div class="form-group" style="margin:0;">
+                                        <label style="font-size:11px;">Rabatt % (0-100)</label>
+                                        <h:inputText value="#{orderView.selectedDiscountPercent}"
+                                            styleClass="form-input">
+                                            <f:convertNumber minFractionDigits="0" maxFractionDigits="2" />
+                                        </h:inputText>
+                                    </div>
+                                    <div style="padding-bottom:1px; align-self:flex-end;">
+                                        <h:commandButton value="&#x2795; Hinzufügen"
+                                            action="#{orderView.addOrderItem()}" styleClass="btn btn-purple"
+                                            style="width:100%;" />
+                                    </div>
+                                </div>
+
+                                <h:panelGroup rendered="#{not empty orderView.tempOrderItems}">
+                                    <div class="overflow-x" style="margin-top:16px;">
+                                        <table style="min-width:500px; font-size:13px; width:100%;">
+                                            <thead>
+                                                <tr>
+                                                    <th style="padding:8px;">Produkt</th>
+                                                    <th style="padding:8px; text-align:right;">Preis</th>
+                                                    <th style="padding:8px; text-align:right;">Menge</th>
+                                                    <th style="padding:8px; text-align:right;">Rabatt</th>
+                                                    <th style="padding:8px; text-align:right;">Gesamt</th>
+                                                    <th style="padding:8px;"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <ui:repeat value="#{orderView.tempOrderItems}" var="item">
+                                                    <tr>
+                                                        <td style="padding:8px;">#{item.product.productName}</td>
+                                                        <td style="padding:8px; text-align:right;">
+                                                            <h:outputText value="#{item.listPrice}">
+                                                                <f:convertNumber locale="de_DE" minFractionDigits="2"
+                                                                    maxFractionDigits="2" />
+                                                            </h:outputText> &#8364;
+                                                        </td>
+                                                        <td style="padding:8px; text-align:right;">#{item.quantity}</td>
+                                                        <td style="padding:8px; text-align:right;">
+                                                            <h:outputText value="#{item.discount}">
+                                                                <f:convertNumber type="percent" maxFractionDigits="0" />
+                                                            </h:outputText>
+                                                        </td>
+                                                        <td style="padding:8px; text-align:right;">
+                                                            <h:outputText
+                                                                value="#{item.listPrice * item.quantity * (1 - item.discount)}">
+                                                                <f:convertNumber locale="de_DE" minFractionDigits="2"
+                                                                    maxFractionDigits="2" />
+                                                            </h:outputText> &#8364;
+                                                        </td>
+                                                        <td style="padding:8px; text-align:center;">
+                                                            <h:commandButton value="&#x2715;"
+                                                                action="#{orderView.removeOrderItem(item)}"
+                                                                styleClass="btn btn-gray"
+                                                                style="padding:2px 8px; font-size:12px;" />
+                                                        </td>
+                                                    </tr>
+                                                </ui:repeat>
+                                                <tr style="border-top:2px solid var(--border); font-weight:700;">
+                                                    <td colspan="4" style="padding:10px 8px; text-align:right;">
+                                                        Gesamtsumme:</td>
+                                                    <td style="padding:10px 8px; text-align:right;">
+                                                        <h:outputText value="#{orderView.totalAmount}">
+                                                            <f:convertNumber locale="de_DE" minFractionDigits="2"
+                                                                maxFractionDigits="2" />
+                                                        </h:outputText> &#8364;
+                                                    </td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </h:panelGroup>
+
+                                <h:panelGroup rendered="#{empty orderView.tempOrderItems}">
+                                    <div class="placeholder-box" style="padding:16px; margin-top:8px;">
+                                        <p style="margin:0; color:var(--text-muted);">Noch keine Produkte hinzugefügt
+                                        </p>
+                                    </div>
+                                </h:panelGroup>
+                            </div>
+
+                            <div class="form-group" style="margin-top:16px;">
+                                <label>Status *</label>
+                                <h:selectOneMenu value="#{orderView.formOrder.orderStatus}" styleClass="form-input">
+                                    <f:selectItem itemValue="1" itemLabel="Ausstehend" />
+                                    <f:selectItem itemValue="2" itemLabel="In Bearbeitung" />
+                                    <f:selectItem itemValue="3" itemLabel="Storniert" />
+                                    <f:selectItem itemValue="4" itemLabel="Abgeschlossen" />
+                                </h:selectOneMenu>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <h:commandButton value="Abbrechen" action="#{orderView.closeCreationPanel()}"
+                                styleClass="btn btn-gray" immediate="true" />
+                            <h:commandButton value="&#x1F4BE; Speichern" action="#{orderView.saveOrder()}"
+                                styleClass="btn btn-purple" />
+                        </div>
+                    </h:form>
+                </div>
+            </div>
+        </h:panelGroup>
+
+        <!-- Detail-Modal -->
+        <h:panelGroup rendered="#{orderView.detailPanelVisible}">
+            <div class="modal-overlay">
+                <div class="modal-content modal-wide">
+                    <div class="modal-header">
+                        <h3>&#x1F4CB; Bestellung ##{orderView.focusedOrder.orderId}</h3>
+                        <h:form>
+                            <h:commandButton value="&#x2715;" action="#{orderView.closeDetail()}"
+                                styleClass="modal-close" />
+                        </h:form>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Stammdaten -->
+                        <table class="detail-table" style="margin-bottom:24px;">
+                            <tbody>
+                                <tr>
+                                    <td class="detail-label">Kunde</td>
+                                    <td>#{orderView.focusedOrder.customer.firstName}
+                                        #{orderView.focusedOrder.customer.lastName}</td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">Bestelldatum</td>
+                                    <td>
+                                        <h:outputText value="#{orderView.focusedOrder.orderDate}">
+                                            <f:convertDateTime type="localDate" pattern="dd.MM.yyyy" />
+                                        </h:outputText>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">Gew. Lieferdatum</td>
+                                    <td>
+                                        <h:outputText value="#{orderView.focusedOrder.requiredDate}">
+                                            <f:convertDateTime type="localDate" pattern="dd.MM.yyyy" />
+                                        </h:outputText>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">Versanddatum</td>
+                                    <td>
+                                        <h:panelGroup rendered="#{orderView.focusedOrder.shippedDate != null}">
+                                            <h:outputText value="#{orderView.focusedOrder.shippedDate}">
+                                                <f:convertDateTime type="localDate" pattern="dd.MM.yyyy" />
+                                            </h:outputText>
+                                        </h:panelGroup>
+                                        <h:panelGroup rendered="#{orderView.focusedOrder.shippedDate == null}">
+                                            <span style="color:var(--text-muted);">-</span>
+                                        </h:panelGroup>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">Status</td>
+                                    <td><span class="badge #{orderView.focusedOrder.orderStatus == 1 ? 'badge-orange'
+                                                           : orderView.focusedOrder.orderStatus == 2 ? 'badge-blue'
+                                                           : orderView.focusedOrder.orderStatus == 3 ? 'badge-red'
+                                                           : 'badge-green'}">
+                                            #{orderView.focusedOrder.orderStatus == 1 ? 'Ausstehend'
+                                            : orderView.focusedOrder.orderStatus == 2 ? 'In Bearbeitung'
+                                            : orderView.focusedOrder.orderStatus == 3 ? 'Storniert'
+                                            : 'Abgeschlossen'}
+                                        </span></td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">Niederlassung</td>
+                                    <td>#{orderView.focusedOrder.storeId}</td>
+                                </tr>
+                                <tr>
+                                    <td class="detail-label">Mitarbeiter</td>
+                                    <td>#{orderView.focusedOrder.staffId}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Status-Änderung: nur ADMIN und USER1 -->
+                        <h:panelGroup rendered="#{request.isUserInRole('ADMIN') or request.isUserInRole('USER1')}">
+                            <div class="status-update-box">
+                                <h:form>
+                                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                                        <label style="font-weight:600; white-space:nowrap;">Status ändern:</label>
+                                        <h:selectOneMenu value="#{orderView.newStatusForUpdate}"
+                                            styleClass="sort-select">
+                                            <f:selectItem itemValue="1" itemLabel="Ausstehend" />
+                                            <f:selectItem itemValue="2" itemLabel="In Bearbeitung" />
+                                            <f:selectItem itemValue="3" itemLabel="Storniert" />
+                                            <f:selectItem itemValue="4" itemLabel="Abgeschlossen" />
+                                        </h:selectOneMenu>
+                                        <h:commandButton value="&#x2713; Aktualisieren"
+                                            action="#{orderView.updateStatus()}" styleClass="btn btn-purple" />
+                                    </div>
+                                    <p style="font-size:12px; color:var(--text-muted); margin-top:6px;">
+                                        Hinweis: Bei Wechsel von "In Bearbeitung" auf "Abgeschlossen" werden
+                                        die Lagerbestände automatisch reduziert.
+                                    </p>
+                                </h:form>
+                            </div>
+                        </h:panelGroup>
+
+                        <!-- Positionen -->
+                        <h3 style="font-size:15px; font-weight:700; margin-bottom:12px;
+                                   padding-top:16px; border-top:1px solid var(--border);">
+                            Positionen (#{orderView.focusedOrder.items.size()})
+                        </h3>
+
+                        <h:panelGroup rendered="#{not empty orderView.focusedOrder.items}">
+                            <div class="overflow-x">
+                                <h:dataTable value="#{orderView.focusedOrder.items}" var="item">
+                                    <h:column>
+                                        <f:facet name="header">Pos.</f:facet>#{item.id.itemId}
+                                    </h:column>
+                                    <h:column>
+                                        <f:facet name="header">Produkt</f:facet>#{item.product.productName}
+                                    </h:column>
+                                    <h:column>
+                                        <f:facet name="header">Menge</f:facet>#{item.quantity}
+                                    </h:column>
+                                    <h:column>
+                                        <f:facet name="header">Einzelpreis</f:facet>
+                                        <h:outputText value="#{item.listPrice}">
+                                            <f:convertNumber locale="de_DE" minFractionDigits="2"
+                                                maxFractionDigits="2" />
+                                        </h:outputText> &#8364;
+                                    </h:column>
+                                    <h:column>
+                                        <f:facet name="header">Rabatt</f:facet>
+                                        <h:outputText value="#{item.discount}">
+                                            <f:convertNumber type="percent" maxFractionDigits="0" />
+                                        </h:outputText>
+                                    </h:column>
+                                    <h:column>
+                                        <f:facet name="header">Gesamt</f:facet>
+                                        <h:outputText value="#{item.listPrice * item.quantity * (1 - item.discount)}">
+                                            <f:convertNumber locale="de_DE" minFractionDigits="2"
+                                                maxFractionDigits="2" />
+                                        </h:outputText> &#8364;
+                                    </h:column>
+                                </h:dataTable>
+                            </div>
+                        </h:panelGroup>
+                    </div>
+                    <div class="modal-footer">
+                        <h:form>
+                            <h:commandButton value="&#x2715; Schließen" action="#{orderView.closeDetail()}"
+                                styleClass="btn btn-gray" />
+                        </h:form>
+                    </div>
+                </div>
+            </div>
+        </h:panelGroup>
+
+        <!-- Bestellungsliste -->
+        <div class="table-wrapper">
+            <div class="table-toolbar">
+                <span>Bestellungsliste</span>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <h:form>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <label style="font-size:13px; color:var(--text-muted);">Sortieren</label>
+                            <h:selectOneMenu value="#{orderView.sortField}" styleClass="sort-select">
+                                <f:selectItem itemValue="ORDER_DATE" itemLabel="Bestelldatum" />
+                                <f:selectItem itemValue="REQUIRED_DATE" itemLabel="Lieferdatum" />
+                                <f:selectItem itemValue="SHIPPED_DATE" itemLabel="Versanddatum" />
+                                <f:selectItem itemValue="ORDER_STATUS" itemLabel="Status" />
+                                <f:selectItem itemValue="CUSTOMER" itemLabel="Kunde" />
+                                <f:selectItem itemValue="STORE" itemLabel="Niederlassung" />
+                            </h:selectOneMenu>
+                            <h:selectOneMenu value="#{orderView.sortDirection}" styleClass="sort-select">
+                                <f:selectItem itemValue="ASC" itemLabel="&#x2191; Aufsteigend" />
+                                <f:selectItem itemValue="DESC" itemLabel="&#x2193; Absteigend" />
+                            </h:selectOneMenu>
+                            <h:commandButton value="Anwenden" action="#{orderView.applySort()}"
+                                styleClass="btn btn-purple" />
+                        </div>
+                    </h:form>
+                    <h:form rendered="#{request.isUserInRole('ADMIN') or request.isUserInRole('USER1')}">
+                        <h:commandButton value="&#x2795; Neue Bestellung" action="#{orderView.openCreationPanel()}"
+                            styleClass="btn-add btn-add-purple" />
+                    </h:form>
+                </div>
+            </div>
+
+            <h:panelGroup rendered="#{empty orderView.orderList}">
+                <div class="placeholder-box">
+                    <p>Keine Bestellungen vorhanden.</p>
+                </div>
+            </h:panelGroup>
+
+            <h:form rendered="#{not empty orderView.orderList}">
+                <div class="overflow-x">
+                    <h:dataTable value="#{orderView.orderList}" var="o">
+                        <h:column>
+                            <f:facet name="header">ID</f:facet>#{o.orderId}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Kunde</f:facet>#{o.customer.firstName} #{o.customer.lastName}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Bestelldatum</f:facet>
+                            <h:outputText value="#{o.orderDate}">
+                                <f:convertDateTime type="localDate" pattern="dd.MM.yyyy" />
+                            </h:outputText>
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Lieferdatum</f:facet>
+                            <h:outputText value="#{o.requiredDate}">
+                                <f:convertDateTime type="localDate" pattern="dd.MM.yyyy" />
+                            </h:outputText>
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Status</f:facet>
+                            <span class="badge #{o.orderStatus == 1 ? 'badge-orange' : o.orderStatus == 2 ? 'badge-blue'
+                                               : o.orderStatus == 3 ? 'badge-red' : 'badge-green'}">
+                                #{o.orderStatus == 1 ? 'Ausstehend' : o.orderStatus == 2 ? 'In Bearbeitung'
+                                : o.orderStatus == 3 ? 'Storniert' : 'Abgeschlossen'}
+                            </span>
+                        </h:column>
+
+                        <h:column>
+                            <f:facet name="header">Details</f:facet>
+                            <h:commandButton value="&#x2139; Details" action="#{orderView.openDetail(o)}"
+                                rendered="#{request.isUserInRole('ADMIN') or request.isUserInRole('USER1')}"
+                                styleClass="btn btn-purple" />
+                        </h:column>
+                    </h:dataTable>
+                </div>
+                <div class="pagination">
+                    <h:commandButton value="&#x2190; Zurück" action="#{orderView.previousPage}"
+                        rendered="#{orderView.hasPrecedingPage()}" styleClass="btn btn-purple" />
+                    <span>Seite #{orderView.page + 1} von #{orderView.totalPages}</span>
+                    <h:commandButton value="Weiter &#x2192;" action="#{orderView.nextPage}"
+                        rendered="#{orderView.hasFollowingPage()}" styleClass="btn btn-purple" />
+                </div>
+            </h:form>
+        </div>
+
+    </ui:define>
+</ui:composition>

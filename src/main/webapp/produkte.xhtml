@@ -1,0 +1,213 @@
+<ui:composition template="template.xhtml" xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html"
+    xmlns:f="jakarta.faces.core" xmlns:ui="jakarta.faces.facelets">
+
+    <ui:define name="title">Produkte</ui:define>
+    <ui:define name="content">
+
+        <div class="page-header">
+            <h2>&#x1F6B2; Produkte</h2>
+            <p>Sortiment, Marken und Preise im Überblick</p>
+        </div>
+
+        <h:messages styleClass="msg-error" errorStyle="display:block" infoStyleClass="msg-success" />
+
+        <!-- Anlegen-Modal: nur ADMIN und USER1 -->
+        <h:panelGroup
+            rendered="#{productView.creationPanelVisible and (request.isUserInRole('ADMIN') or request.isUserInRole('USER1'))}">
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <h:form>
+                        <div class="modal-header">
+                            <h3>&#x2795; Neues Produkt anlegen</h3>
+                            <h:commandButton value="&#x2715;" action="#{productView.closeCreationPanel()}"
+                                styleClass="modal-close" immediate="true" />
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-row">
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Produktname *</label>
+                                    <h:inputText value="#{productView.formProduct.productName}" styleClass="form-input"
+                                        required="true" requiredMessage="Produktname ist erforderlich" />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Listenpreis (&#8364;) *</label>
+                                    <h:inputText value="#{productView.formProduct.listPrice}" styleClass="form-input"
+                                        required="true" requiredMessage="Listenpreis ist erforderlich">
+                                        <f:convertNumber locale="de_DE" />
+                                    </h:inputText>
+                                </div>
+                                <div class="form-group">
+                                    <label>Modelljahr *</label>
+                                    <h:inputText value="#{productView.formProduct.modelYear}" styleClass="form-input"
+                                        required="true" requiredMessage="Modelljahr ist erforderlich" />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Marke *</label>
+                                    <h:selectOneMenu value="#{productView.selectedBrandId}" styleClass="form-input"
+                                        required="true" requiredMessage="Marke ist erforderlich">
+                                        <f:selectItem itemValue="#{null}" itemLabel="-- Bitte wählen --"
+                                            noSelectionOption="true" />
+                                        <f:selectItems value="#{productView.brandList}" var="b"
+                                            itemValue="#{b.brandId()}" itemLabel="#{b.brandName}" />
+                                    </h:selectOneMenu>
+                                </div>
+                                <div class="form-group">
+                                    <label>Kategorie *</label>
+                                    <h:selectOneMenu value="#{productView.selectedCategoryId}" styleClass="form-input"
+                                        required="true" requiredMessage="Kategorie ist erforderlich">
+                                        <f:selectItem itemValue="#{null}" itemLabel="-- Bitte wählen --"
+                                            noSelectionOption="true" />
+                                        <f:selectItems value="#{productView.categoryList}" var="cat"
+                                            itemValue="#{cat.categoryId()}" itemLabel="#{cat.categoryName}" />
+                                    </h:selectOneMenu>
+                                </div>
+                            </div>
+
+                            <!-- Initialer Lagerbestand für mehrere Filialen -->
+                            <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+                                <p style="font-weight:600; margin-bottom:12px;">Initialer Lagerbestand (optional)</p>
+
+                                <!-- Bereits hinzugefügte Einträge -->
+                                <h:panelGroup rendered="#{not empty productView.stockEntries}">
+                                    <div style="margin-bottom:12px;">
+                                        <h:dataTable value="#{productView.stockEntries}" var="entry" styleClass="table"
+                                            style="width:100%; margin-bottom:8px;">
+                                            <h:column>
+                                                <f:facet name="header">Filiale</f:facet>
+                                                #{productView.getStoreName(entry.storeId)}
+                                            </h:column>
+                                            <h:column>
+                                                <f:facet name="header">Bestand</f:facet>
+                                                #{entry.quantity}
+                                            </h:column>
+                                            <h:column>
+                                                <f:facet name="header">&#x1F5D1;</f:facet>
+                                                <h:commandButton value="&#x2715;" styleClass="btn btn-gray"
+                                                    action="#{productView.removeStockEntry(entry)}" immediate="true" />
+                                            </h:column>
+                                        </h:dataTable>
+                                    </div>
+                                </h:panelGroup>
+
+                                <!-- Neue Filiale hinzufügen -->
+                                <div class="form-row" style="align-items:flex-end;">
+                                    <div class="form-group">
+                                        <label>Filiale hinzufügen</label>
+                                        <h:selectOneMenu value="#{productView.newEntryStoreId}" styleClass="form-input">
+                                            <f:selectItem itemValue="#{null}" itemLabel="-- Filiale wählen --"
+                                                noSelectionOption="true" />
+                                            <f:selectItems value="#{productView.storeList}" var="st"
+                                                itemValue="#{st.storeId}" itemLabel="#{st.storeName} (#{st.city})" />
+                                        </h:selectOneMenu>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Bestand</label>
+                                        <h:inputText value="#{productView.newEntryQuantity}" styleClass="form-input" />
+                                    </div>
+                                    <div class="form-group" style="align-self:flex-end; padding-bottom:2px;">
+                                        <h:commandButton value="&#x2795; Hinzufügen"
+                                            action="#{productView.addStockEntry()}" styleClass="btn btn-success"
+                                            immediate="false" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <h:commandButton value="Abbrechen" action="#{productView.closeCreationPanel()}"
+                                styleClass="btn btn-gray" immediate="true" />
+                            <h:commandButton value="&#x1F4BE; Speichern" action="#{productView.saveProduct()}"
+                                styleClass="btn btn-success" />
+                        </div>
+                    </h:form>
+                </div>
+            </div>
+        </h:panelGroup>
+
+        <!-- Tabelle -->
+        <div class="table-wrapper">
+            <div class="table-toolbar">
+                <span>Produktliste</span>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <h:form>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <label style="font-size:13px; color:var(--text-muted);">Sortieren</label>
+                            <h:selectOneMenu value="#{productView.sortField}" styleClass="sort-select">
+                                <f:selectItem itemValue="NAME" itemLabel="Name" />
+                                <f:selectItem itemValue="LIST_PRICE" itemLabel="Preis" />
+                                <f:selectItem itemValue="MODEL_YEAR" itemLabel="Modelljahr" />
+                                <f:selectItem itemValue="BRAND" itemLabel="Marke" />
+                                <f:selectItem itemValue="CATEGORY" itemLabel="Kategorie" />
+                            </h:selectOneMenu>
+                            <h:selectOneMenu value="#{productView.sortDirection}" styleClass="sort-select">
+                                <f:selectItem itemValue="ASC" itemLabel="&#x2191; Aufsteigend" />
+                                <f:selectItem itemValue="DESC" itemLabel="&#x2193; Absteigend" />
+                            </h:selectOneMenu>
+                            <h:commandButton value="Anwenden" action="#{productView.applySort()}"
+                                styleClass="btn btn-success" />
+                        </div>
+                    </h:form>
+                    <h:form rendered="#{request.isUserInRole('ADMIN') or request.isUserInRole('USER1')}">
+                        <h:commandButton value="&#x2795; Neues Produkt" action="#{productView.openCreationPanel()}"
+                            styleClass="btn-add btn-add-green" />
+                    </h:form>
+                </div>
+            </div>
+
+            <h:panelGroup rendered="#{empty productView.productList}">
+                <div class="placeholder-box">
+                    <p>Keine Produkte vorhanden.</p>
+                </div>
+            </h:panelGroup>
+
+            <h:form rendered="#{not empty productView.productList}">
+                <div class="overflow-x">
+                    <h:dataTable value="#{productView.productList}" var="p">
+                        <h:column>
+                            <f:facet name="header">ID</f:facet>#{p.productId}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Produktname</f:facet>#{p.productName}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Marke</f:facet>#{p.brand.brandName}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Kategorie</f:facet>#{p.category.categoryName}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Modelljahr</f:facet>#{p.modelYear}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Listenpreis</f:facet>
+                            <h:outputText value="#{p.listPrice}">
+                                <f:convertNumber locale="de_DE" minFractionDigits="2" maxFractionDigits="2" />
+                            </h:outputText> &#8364;
+                        </h:column>
+                        <!-- Löschen: nur ADMIN und USER1, nur wenn nicht in Bestellungen -->
+                        <h:column rendered="#{request.isUserInRole('ADMIN') or request.isUserInRole('USER1')}">
+                            <f:facet name="header">Aktion</f:facet>
+                            <h:commandButton value="&#x1F5D1; Löschen" styleClass="btn btn-gray"
+                                action="#{productView.deleteProduct()}"
+                                onclick="return confirm('Produkt wirklich löschen? (Nicht möglich wenn in Bestellungen)')">
+                                <f:setPropertyActionListener target="#{productView.selectedIdToDelete}"
+                                    value="#{p.productId}" />
+                            </h:commandButton>
+                        </h:column>
+                    </h:dataTable>
+                </div>
+                <div class="pagination">
+                    <h:commandButton value="&#x2190; Zurück" action="#{productView.previousPage}"
+                        rendered="#{productView.hasPrecedingPage()}" styleClass="btn-add btn-add-green" />
+                    <span>Seite #{productView.page + 1} von #{productView.totalPages}</span>
+                    <h:commandButton value="Weiter &#x2192;" action="#{productView.nextPage}"
+                        rendered="#{productView.hasFollowingPage()}" styleClass="btn btn-success" />
+                </div>
+            </h:form>
+        </div>
+
+    </ui:define>
+</ui:composition>

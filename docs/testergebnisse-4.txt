@@ -1,0 +1,272 @@
+
+Im Rahmen der Optimierung wurden unnötige Datenbankabfragen in den Listen- und Detailansichten reduziert. Der Schwerpunkt lag zuerst auf der Bestellseite, 
+da dort vor den Anpassungen die höchsten SQL-Werte aufgetreten sind. Die Bestellliste lädt nun keine Bestellpositionen mehr unnötig zusammen mit der 
+paginierten Übersicht. Dadurch wurde die Sortier- und Paginierungsabfrage von vormals bis zu 70 SQL-Statements auf 3 SQL-Statements reduziert. 
+Die Detailansicht wurde außerdem so angepasst, dass keine StrictJpaComplianceViolation mehr durch Hibernate/JPA auftritt.
+
+Zusätzlich wurde die Lagerbestandsseite optimiert. Die Dropdowns für Produkte und Filialen laden nun nur noch leichte ID-/Name-Daten statt vollständiger 
+Product- und Store-Entities. Außerdem wurde Stock.product auf LAZY gesetzt. Dadurch wurden die Stock-Selenium-Tests von jeweils 21 SQL-Statements 
+auf jeweils 5 SQL-Statements reduziert.
+
+Auch das Produkt-Anlegen wurde verbessert. Beim Speichern eines neuen Produkts werden Marke und Kategorie nun per em.getReference(...) gesetzt. 
+Dadurch entfallen unnötige SELECTs für Brand und Category. Zusätzlich wurden Product.brand und Product.category auf LAZY gesetzt. 
+Die Produktliste lädt diese Daten weiterhin gezielt per JOIN FETCH. Dadurch sank productCreate_neuesProduktAnlegen von 16 auf 14 SQL-Statements.
+
+Insgesamt wurde die Anzahl der gemessenen SQL-Statements von 637 auf 212 reduziert. Alle Tests laufen weiterhin erfolgreich durch. 
+Die vielen SQL-Statements beim Start des Servers stammen aus Schema-Erzeugung und Testdatenimport und sind für die gemessene 
+Seitenperformance nicht ausschlaggebend.
+
+
+
+====================================================================================================================================================================================
+
+Vor den Anpassungen:
+
+OrderSeleniumIT.orderList_bestelluebersichtLaden: 44 SQL-Statements
+OrderSeleniumIT.orderDetails_ersteBestellungAnzeigen: 50 SQL-Statements
+OrderSeleniumIT.orderDetails_zeigtKundendaten: 50 SQL-Statements
+OrderSeleniumIT.orderDetails_zeigtPositionen: 50 SQL-Statements
+OrderSeleniumIT.orderDetails_zeigtStatus: 50 SQL-Statements
+OrderSeleniumIT.orderStatus_ungueltigerStatuswechselNichtErlaubt: 50 SQL-Statements
+OrderSeleniumIT.orderList_sortierungOderPaginierungFunktioniert: 70 SQL-Statements
+
+StockSeleniumIT.stockList_lagerbestaendeLaden: 21 SQL-Statements
+StockSeleniumIT.stockList_zeigtProduktUndNiederlassung: 21 SQL-Statements
+
+ProductCrudIT.productCreate_neuesProduktAnlegen: 16 SQL-Statements
+
+SQL-Statements insgesamt: 637
+Gesamtstatus: BUILD/TESTS ERFOLGREICH
+
+
+
+====================================================================================================================================================================================
+
+
+
+Nach der ersten Optimierung:
+
+OrderSeleniumIT.orderList_bestelluebersichtLaden: 2 SQL-Statements
+OrderSeleniumIT.orderDetails_ersteBestellungAnzeigen: 10 SQL-Statements
+OrderSeleniumIT.orderDetails_zeigtKundendaten: 10 SQL-Statements
+OrderSeleniumIT.orderDetails_zeigtPositionen: 10 SQL-Statements
+OrderSeleniumIT.orderDetails_zeigtStatus: 10 SQL-Statements
+OrderSeleniumIT.orderStatus_ungueltigerStatuswechselNichtErlaubt: 10 SQL-Statements
+OrderSeleniumIT.orderList_sortierungOderPaginierungFunktioniert: 3 SQL-Statements
+
+StockSeleniumIT.stockList_lagerbestaendeLaden: 21 SQL-Statements
+StockSeleniumIT.stockList_zeigtProduktUndNiederlassung: 21 SQL-Statements
+
+ProductCrudIT.productCreate_neuesProduktAnlegen: 16 SQL-Statements
+
+SQL-Statements insgesamt: 246
+Gesamtstatus: BUILD/TESTS ERFOLGREICH
+
+
+
+====================================================================================================================================================================================
+
+
+
+Nach der finalen Optimierung:
+
+OrderSeleniumIT.orderList_bestelluebersichtLaden: 2 SQL-Statements
+OrderSeleniumIT.orderDetails_ersteBestellungAnzeigen: 10 SQL-Statements
+OrderSeleniumIT.orderDetails_zeigtKundendaten: 10 SQL-Statements
+OrderSeleniumIT.orderDetails_zeigtPositionen: 10 SQL-Statements
+OrderSeleniumIT.orderDetails_zeigtStatus: 10 SQL-Statements
+OrderSeleniumIT.orderStatus_ungueltigerStatuswechselNichtErlaubt: 10 SQL-Statements
+OrderSeleniumIT.orderList_sortierungOderPaginierungFunktioniert: 3 SQL-Statements
+
+StockSeleniumIT.stockList_lagerbestaendeLaden: 5 SQL-Statements
+StockSeleniumIT.stockList_zeigtProduktUndNiederlassung: 5 SQL-Statements
+
+ProductCrudIT.productCreate_neuesProduktAnlegen: 14 SQL-Statements
+
+SQL-Statements insgesamt: 212
+Gesamtstatus: BUILD/TESTS ERFOLGREICH
+
+3. Finale Konsolenausgabe nach allen Anpassungen
+
+TESTERGEBNISSE NACH ANPASSUNGEN Nr. 2:
+
+============================================================
+TESTERGEBNISSE - TEAM 15
+============================================================
+
+Testklasse: CustomerCrudIT
+Status:     OK
+Tests:      7
+Fehler:     0
+Skipped:    0
+Dauer:      25.263 s
+Testfälle:
+- OK customerCreate_neuenKundenAnlegen  SQL-Statements: 10
+Zweck: Kunden-CREATE inklusive Anzeigeprüfung und eigener SQL-Statement-Zählung.
+- OK customerRead_angelegtenKundenInTabelleFinden  SQL-Statements: 3
+Zweck: Kunden-READ inklusive Tabellenprüfung und eigener SQL-Statement-Zählung.
+- OK customerUpdate_stadtDesKundenAendern  SQL-Statements: 9
+Zweck: Kunden-UPDATE inklusive Persistenzprüfung und eigener SQL-Statement-Zählung.
+- OK customerDelete_angelegtenKundenLoeschen  SQL-Statements: 10
+Zweck: Kunden-DELETE für einen neu angelegten Kunden ohne Bestellung inklusive eigener SQL-Statement-Zählung.
+- OK customerDelete_kundeMitBestehenderBestellungNichtErlaubt  SQL-Statements: 10
+Zweck: Constraint-Test: Kunde aus bestehender Bestellung darf nicht gelöscht werden; eigene SQL-Statement-Zählung.
+- OK customerCreate_ohnePflichtfeldNichtErlaubt  SQL-Statements: 6
+Zweck: Constraint-Test: Kunde ohne Pflichtfeld darf nicht gespeichert werden; eigene SQL-Statement-Zählung.
+- OK customerCreate_ungueltigeEmailNichtErlaubt  SQL-Statements: 6
+Zweck: Constraint-Test: Kunde mit ungültiger E-Mail darf nicht gespeichert werden; eigene SQL-Statement-Zählung.
+
+Testklasse: H2ImportSqlTest
+Status:     OK
+Tests:      1
+Fehler:     0
+Skipped:    0
+Dauer:      0.234 s
+Testfälle:
+- OK importSqlKannDirektInH2GeladenWerden  SQL-Statements: nicht gemessen
+Zweck: Prüft Testdatenimport und H2-Kompatibilität.
+
+Testklasse: HtmlUnitLoginIT
+Status:     OK
+Tests:      1
+Fehler:     0
+Skipped:    0
+Dauer:      1.028 s
+Testfälle:
+- OK loginFunktioniertMitHtmlUnit  SQL-Statements: 0
+Zweck: Prüft Login mit HtmlUnit.
+
+Testklasse: OrderSeleniumIT
+Status:     OK
+Tests:      7
+Fehler:     0
+Skipped:    0
+Dauer:      22.023 s
+Testfälle:
+- OK orderList_bestelluebersichtLaden  SQL-Statements: 2
+- OK orderDetails_ersteBestellungAnzeigen  SQL-Statements: 10
+- OK orderDetails_zeigtKundendaten  SQL-Statements: 10
+- OK orderDetails_zeigtPositionen  SQL-Statements: 10
+- OK orderDetails_zeigtStatus  SQL-Statements: 10
+- OK orderStatus_ungueltigerStatuswechselNichtErlaubt  SQL-Statements: 10
+- OK orderList_sortierungOderPaginierungFunktioniert  SQL-Statements: 3
+
+Testklasse: ProductCrudIT
+Status:     OK
+Tests:      7
+Fehler:     0
+Skipped:    0
+Dauer:      24.862 s
+Testfälle:
+- OK productCreate_neuesProduktAnlegen  SQL-Statements: 14
+Zweck: Produkt-CREATE inklusive SQL-Statement-Zählung.
+- OK productRead_angelegtesProduktInTabelleFinden  SQL-Statements: 5
+Zweck: Produkt-READ inklusive SQL-Statement-Zählung.
+- OK productDelete_angelegtesProduktLoeschen  SQL-Statements: 15
+Zweck: Produkt-DELETE inklusive SQL-Statement-Zählung. Produkt-UPDATE wird fachlich bewusst nicht getestet.
+- OK productDelete_produktMitBestellpositionNichtErlaubt  SQL-Statements: 15
+Zweck: Produkt-Testfall.
+- OK productCreate_ohneProduktnameNichtErlaubt  SQL-Statements: 5
+Zweck: Produkt-Testfall.
+- OK productCreate_mitNegativemPreisNichtErlaubt  SQL-Statements: 10
+Zweck: Produkt-Testfall.
+- OK productUpdate_nichtMoeglichOderNichtVorhanden  SQL-Statements: 5
+Zweck: Produkt-Testfall.
+
+Testklasse: SeleniumIT
+Status:     OK
+Tests:      4
+Fehler:     0
+Skipped:    1
+Dauer:      6.382 s
+Testfälle:
+- OK Login mit Microsoft Edge  SQL-Statements: nicht gemessen
+- SKIPPED Login mit Chromium (Fedora/Linux)  SQL-Statements: nicht gemessen
+- OK Login mit Chrome  SQL-Statements: nicht gemessen
+- OK Login mit Firefox  SQL-Statements: nicht gemessen
+
+Testklasse: StaffSeleniumIT
+Status:     OK
+Tests:      3
+Fehler:     0
+Skipped:    0
+Dauer:      10.052 s
+Testfälle:
+- OK staffList_mitarbeiterLaden  SQL-Statements: 5
+- OK staffList_zeigtStoreZuordnung  SQL-Statements: 5
+- OK staffList_zeigtKontaktOderRolleninformationen  SQL-Statements: 5
+
+Testklasse: StockSeleniumIT
+Status:     OK
+Tests:      2
+Fehler:     0
+Skipped:    0
+Dauer:      5.539 s
+Testfälle:
+- OK stockList_lagerbestaendeLaden  SQL-Statements: 5
+- OK stockList_zeigtProduktUndNiederlassung  SQL-Statements: 5
+
+Testklasse: StoreSeleniumIT
+Status:     OK
+Tests:      4
+Fehler:     0
+Skipped:    0
+Dauer:      10.000 s
+Testfälle:
+- OK storeList_niederlassungenLaden  SQL-Statements: 2
+- OK storeList_zeigtKontaktdaten  SQL-Statements: 2
+- OK storeList_sortierungOderTabelleFunktioniert  SQL-Statements: 3
+- OK storeDetailsOderRead_zeigtZugehoerigeInformationen  SQL-Statements: 2
+
+SQL-STATEMENT-ÜBERSICHT PRO TEST
+
+CustomerCrudIT.customerCreate_neuenKundenAnlegen: 10 SQL-Statements
+CustomerCrudIT.customerCreate_ohnePflichtfeldNichtErlaubt: 6 SQL-Statements
+CustomerCrudIT.customerCreate_ungueltigeEmailNichtErlaubt: 6 SQL-Statements
+CustomerCrudIT.customerDelete_angelegtenKundenLoeschen: 10 SQL-Statements
+CustomerCrudIT.customerDelete_kundeMitBestehenderBestellungNichtErlaubt: 10 SQL-Statements
+CustomerCrudIT.customerRead_angelegtenKundenInTabelleFinden: 3 SQL-Statements
+CustomerCrudIT.customerUpdate_stadtDesKundenAendern: 9 SQL-Statements
+HtmlUnitLoginIT.loginFunktioniertMitHtmlUnit: 0 SQL-Statements
+OrderSeleniumIT.orderDetails_ersteBestellungAnzeigen: 10 SQL-Statements
+OrderSeleniumIT.orderDetails_zeigtKundendaten: 10 SQL-Statements
+OrderSeleniumIT.orderDetails_zeigtPositionen: 10 SQL-Statements
+OrderSeleniumIT.orderDetails_zeigtStatus: 10 SQL-Statements
+OrderSeleniumIT.orderList_bestelluebersichtLaden: 2 SQL-Statements
+OrderSeleniumIT.orderList_sortierungOderPaginierungFunktioniert: 3 SQL-Statements
+OrderSeleniumIT.orderStatus_ungueltigerStatuswechselNichtErlaubt: 10 SQL-Statements
+ProductCrudIT.productCreate_mitNegativemPreisNichtErlaubt: 10 SQL-Statements
+ProductCrudIT.productCreate_neuesProduktAnlegen: 14 SQL-Statements
+ProductCrudIT.productCreate_ohneProduktnameNichtErlaubt: 5 SQL-Statements
+ProductCrudIT.productDelete_angelegtesProduktLoeschen: 15 SQL-Statements
+ProductCrudIT.productDelete_produktMitBestellpositionNichtErlaubt: 15 SQL-Statements
+ProductCrudIT.productRead_angelegtesProduktInTabelleFinden: 5 SQL-Statements
+ProductCrudIT.productUpdate_nichtMoeglichOderNichtVorhanden: 5 SQL-Statements
+SeleniumIT.runLoginTestWithSqlCounting: 0 SQL-Statements
+StaffSeleniumIT.staffList_mitarbeiterLaden: 5 SQL-Statements
+StaffSeleniumIT.staffList_zeigtKontaktOderRolleninformationen: 5 SQL-Statements
+StaffSeleniumIT.staffList_zeigtStoreZuordnung: 5 SQL-Statements
+StockSeleniumIT.stockList_lagerbestaendeLaden: 5 SQL-Statements
+StockSeleniumIT.stockList_zeigtProduktUndNiederlassung: 5 SQL-Statements
+StoreSeleniumIT.storeDetailsOderRead_zeigtZugehoerigeInformationen: 2 SQL-Statements
+StoreSeleniumIT.storeList_niederlassungenLaden: 2 SQL-Statements
+StoreSeleniumIT.storeList_sortierungOderTabelleFunktioniert: 3 SQL-Statements
+StoreSeleniumIT.storeList_zeigtKontaktdaten: 2 SQL-Statements
+
+GESAMTÜBERSICHT
+
+Gesamte Testklassen:       9
+Gesamte Tests:             36
+Gesamte Fehler:            0
+Gesamte Skipped:           1
+Tests mit SQL-Zählung:     31
+SQL-Statements insgesamt:  212
+Gesamtdauer:               105.383 s
+Gesamtstatus:              BUILD/TESTS ERFOLGREICH
+
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  02:23 min
+[INFO] Finished at: 2026-05-30T02:01:43+02:00
+[INFO] ------------------------------------------------------------------------

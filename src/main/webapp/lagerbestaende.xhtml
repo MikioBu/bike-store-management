@@ -1,0 +1,143 @@
+<ui:composition template="template.xhtml" xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html"
+    xmlns:f="jakarta.faces.core" xmlns:ui="jakarta.faces.facelets">
+
+    <ui:define name="title">Lagerbestände</ui:define>
+    <ui:define name="content">
+
+        <div class="page-header">
+            <h2>&#x1F4E6; Lagerbestände</h2>
+            <p>Aktuelle Bestände aller Produkte in allen Niederlassungen</p>
+        </div>
+
+        <h:messages styleClass="msg-error" errorStyle="display:block" infoStyleClass="msg-success" />
+
+        <!-- Bestand-Formular: nur ADMIN und USER1 -->
+        <h:panelGroup
+            rendered="#{stockView.stockFormVisible and (request.isUserInRole('ADMIN') or request.isUserInRole('USER1'))}">
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <h:form>
+                        <div class="modal-header">
+                            <h3>&#x1F4E6; Lagerbestand verwalten</h3>
+                            <h:commandButton value="&#x2715;" action="#{stockView.closeStockForm()}"
+                                styleClass="modal-close" immediate="true" />
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group" style="margin-bottom:16px;">
+                                <label>Produkt *</label>
+                                <h:selectOneMenu value="#{stockView.formProductId}" styleClass="form-input"
+                                    required="true" requiredMessage="Bitte ein Produkt wählen">
+                                    <f:selectItem itemValue="#{null}" itemLabel="-- Produkt wählen --"
+                                        noSelectionOption="true" />
+                                    <f:selectItems value="#{stockView.allProducts}" var="p" itemValue="#{p[0]}"
+                                        itemLabel="#{p[1]}" />
+                                </h:selectOneMenu>
+                            </div>
+                            <div class="form-group" style="margin-bottom:16px;">
+                                <label>Filiale *</label>
+                                <h:selectOneMenu value="#{stockView.formStoreId}" styleClass="form-input"
+                                    required="true" requiredMessage="Bitte eine Filiale wählen">
+                                    <f:selectItem itemValue="#{null}" itemLabel="-- Filiale wählen --"
+                                        noSelectionOption="true" />
+                                    <f:selectItems value="#{stockView.allStores}" var="st" itemValue="#{st[0]}"
+                                        itemLabel="#{st[1]} (#{st[2]})" />
+                                </h:selectOneMenu>
+                            </div>
+                            <div class="form-group">
+                                <label>Bestand *</label>
+                                <h:inputText value="#{stockView.formQuantity}" styleClass="form-input" required="true"
+                                    requiredMessage="Bestand ist erforderlich" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <h:commandButton value="Abbrechen" action="#{stockView.closeStockForm()}"
+                                styleClass="btn btn-gray" immediate="true" />
+                            <h:commandButton value="&#x1F4BE; Speichern" action="#{stockView.saveStock()}"
+                                styleClass="btn btn-teal" />
+                        </div>
+                    </h:form>
+                </div>
+            </div>
+        </h:panelGroup>
+
+        <!-- Tabelle -->
+        <div class="table-wrapper">
+            <div class="table-toolbar">
+                <span>Bestandsliste</span>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <!-- Filter und Sortierung kombiniert -->
+                    <h:form>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <label style="font-size:13px; color:var(--text-muted);">Produkt</label>
+                            <h:selectOneMenu value="#{stockView.filterProductId}" styleClass="sort-select">
+                                <f:selectItem itemValue="#{null}" itemLabel="-- alle Produkte --" />
+                                <f:selectItems value="#{stockView.allProducts}" var="p" itemValue="#{p[0]}"
+                                    itemLabel="#{p[1]}" />
+                            </h:selectOneMenu>
+                            <label style="font-size:13px; color:var(--text-muted);">Sortieren</label>
+                            <h:selectOneMenu value="#{stockView.sortField}" styleClass="sort-select">
+                                <f:selectItem itemValue="PRODUCT" itemLabel="Produkt" />
+                                <f:selectItem itemValue="STORE" itemLabel="Niederlassung" />
+                                <f:selectItem itemValue="QUANTITY" itemLabel="Bestand" />
+                            </h:selectOneMenu>
+                            <h:selectOneMenu value="#{stockView.sortDirection}" styleClass="sort-select">
+                                <f:selectItem itemValue="ASC" itemLabel="&#x2191; Aufsteigend" />
+                                <f:selectItem itemValue="DESC" itemLabel="&#x2193; Absteigend" />
+                            </h:selectOneMenu>
+                            <h:commandButton value="Anwenden" action="#{stockView.applyFilterAndSort()}"
+                                styleClass="btn btn-teal" />
+                            <h:commandButton value="&#x2715; Zurücksetzen" action="#{stockView.resetFilter()}"
+                                styleClass="btn btn-gray" rendered="#{stockView.filterProductId != null}" />
+                        </div>
+                    </h:form>
+                    <!-- Bearbeiten-Button: nur ADMIN und USER1 -->
+                    <h:form rendered="#{request.isUserInRole('ADMIN') or request.isUserInRole('USER1')}">
+                        <h:commandButton value="Bestand verwalten" action="#{stockView.openStockForm()}"
+                            styleClass="btn-add btn-add-teal" />
+                    </h:form>
+                </div>
+            </div>
+
+            <h:panelGroup rendered="#{empty stockView.stockList}">
+                <div class="placeholder-box">
+                    <p>#{stockView.filterProductId != null ? 'Kein Lagerbestand für dieses Produkt vorhanden.' : 'Keine
+                        Lagerbestände vorhanden.'}</p>
+                </div>
+            </h:panelGroup>
+
+            <h:form rendered="#{not empty stockView.stockList}">
+                <div class="overflow-x">
+                    <h:dataTable value="#{stockView.stockList}" var="s">
+                        <h:column>
+                            <f:facet name="header">Produkt-ID</f:facet>#{s.product.productId}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Produkt</f:facet>#{s.product.productName}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Kategorie</f:facet>#{s.product.category.categoryName}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Filial-ID</f:facet>#{s.storeId}
+                        </h:column>
+                        <h:column>
+                            <f:facet name="header">Bestand</f:facet>
+                            <span
+                                class="badge #{s.quantity == 0 ? 'badge-red' : s.quantity lt 5 ? 'badge-orange' : 'badge-green'}">
+                                #{s.quantity}
+                            </span>
+                        </h:column>
+                    </h:dataTable>
+                </div>
+                <div class="pagination">
+                    <h:commandButton value="&#x2190; Zurück" action="#{stockView.previousPage}"
+                        rendered="#{stockView.hasPrecedingPage()}" styleClass="btn btn-teal" />
+                    <span>Seite #{stockView.page + 1} von #{stockView.totalPages}</span>
+                    <h:commandButton value="Weiter &#x2192;" action="#{stockView.nextPage}"
+                        rendered="#{stockView.hasFollowingPage()}" styleClass="btn btn-teal" />
+                </div>
+            </h:form>
+        </div>
+
+    </ui:define>
+</ui:composition>

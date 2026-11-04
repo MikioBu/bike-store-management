@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets">
+<h:head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        <ui:insert name="title">Vertriebsunterstützungsystem</ui:insert> - Bikes Stores Team 15
+    </title>
+    <h:outputStylesheet library="css" name="style.css" />
+</h:head>
+<h:body>
+
+    <div id="header">
+        <div class="header-inner">
+            <h:link outcome="startseite" styleClass="header-brand">Vertriebsunterstützungsystem Bikes-Stores</h:link>
+            <nav>
+                <h:link outcome="startseite" value="Startseite" />
+                <h:link outcome="kunden" value="Kunden" />
+                <h:link outcome="produkte" value="Produkte" />
+                <h:link outcome="bestellungen" value="Bestellungen" />
+                <h:link outcome="niederlassungen" value="Niederlassungen" />
+                <h:link outcome="lagerbestaende" value="Lagerbestände" />
+                <h:panelGroup rendered="#{request.isUserInRole('ADMIN')}">
+                    <h:link outcome="mitarbeiter" value="Mitarbeiter" />
+                </h:panelGroup>
+            </nav>
+            <div class="header-user">
+                <span
+                    class="header-role #{request.isUserInRole('ADMIN') ? 'role-admin' : request.isUserInRole('USER1') ? 'role-user1' : 'role-user2'}">
+                    #{request.isUserInRole('ADMIN') ? 'ADMIN' : request.isUserInRole('USER1') ? 'USER1' : 'USER2'}
+                </span>
+                <span class="header-email">#{request.remoteUser}</span>
+                <h:form>
+                    <h:commandButton value="Abmelden" action="#{loginView.logout()}" styleClass="btn-logout" />
+                </h:form>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-wrapper">
+        <ui:insert name="content">
+            Kein Inhalt vorhanden.
+        </ui:insert>
+    </div>
+
+    <div id="footer">
+        &#169; 2026 <span>Bikes Stores Vertriebsunterstützungsystem - Team 15</span> |
+        Malte &#183; Jan &#183; Mhamad &#183; Paloma &#183; Nour
+    </div>
+
+</h:body>
+
+</html>

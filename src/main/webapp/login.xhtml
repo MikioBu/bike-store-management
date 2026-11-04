@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html" xmlns:f="jakarta.faces.core">
+
+<h:head>
+    <title>Login - BikesStores Team 15</title>
+    <h:outputStylesheet library="css" name="style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--body-bg);
+            margin: 0;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-logo {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 28px;
+        }
+
+        .login-field {
+            margin-bottom: 16px;
+        }
+
+        .login-field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+        .login-field input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            color: var(--text-main);
+            background: white;
+            box-sizing: border-box;
+            transition: border-color .2s;
+        }
+
+        .login-field input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, .15);
+        }
+
+        .login-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 11px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity .2s;
+            margin-top: 8px;
+        }
+
+        .login-btn:hover {
+            opacity: .88;
+        }
+
+        .login-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</h:head>
+
+<h:body>
+    <div class="login-card">
+        <div class="login-logo">&#x1F6B4; BikesStores Team 15</div>
+        <div class="login-subtitle">Bitte melden Sie sich an, um fortzufahren.</div>
+
+        <h:panelGroup rendered="#{param.error == 'true' or loginView.fehler}">
+            <div class="login-error">
+                &#x26A0; E-Mail oder Passwort falsch.
+            </div>
+        </h:panelGroup>
+
+        <!-- ajax="false" ist nötig: SecurityContext.authenticate() muss im selben HTTP-Request wie die Response laufen.
+            Mit Ajax läuft authenticate() in einem Partial-Request und der Browser bekommt nie den Redirect nach /startseite.xhtml -->
+        <h:form id="loginForm">
+            <div class="login-field">
+                <label for="loginForm:email">E-Mail-Adresse</label>
+                <h:inputText id="email" value="#{loginView.email}" autocomplete="email" required="true"
+                    requiredMessage="E-Mail ist erforderlich" />
+            </div>
+
+            <div class="login-field">
+                <label for="loginForm:passwort">Passwort</label>
+                <h:inputSecret id="passwort" value="#{loginView.passwort}" autocomplete="current-password"
+                    required="true" requiredMessage="Passwort ist erforderlich" />
+            </div>
+
+            <h:commandButton value="Anmelden &#x2192;" action="#{loginView.login()}" styleClass="login-btn">
+                <!-- KEIN f:ajax hier - voller Page-Submit ist zwingend -->
+            </h:commandButton>
+        </h:form>
+
+    </div>
+</h:body>
+
+</html>
